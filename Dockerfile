@@ -22,6 +22,9 @@ COPY . .
 # Expose the standard Streamlit port
 EXPOSE 8501
 
+# Set PYTHONPATH to include /app directory
+ENV PYTHONPATH=/app
+
 # Healthcheck for Railway/Render
 HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health || exit 1
 
