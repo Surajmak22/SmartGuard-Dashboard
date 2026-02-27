@@ -213,44 +213,66 @@ def main():
         /* ---------- MOBILE RESPONSIVE QUERIES ---------- */
         @media (max-width: 768px) {
             .navbar-strip {
-                padding: 0 1rem;
+                padding: 0 0.75rem;
+                height: 48px;
             }
             .block-container {
-                padding-top: 4rem !important;
-                padding-left: 1rem !important;
-                padding-right: 1rem !important;
+                padding-top: 3.25rem !important;
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
             }
             .hero-section {
-                padding: 2.5rem 0 2rem;
+                padding: 1.5rem 0 1.25rem;
             }
             .hero-title {
-                font-size: 2.25rem !important;
+                font-size: 1.85rem !important;
+                line-height: 1.1;
+                margin-bottom: 0.5rem;
             }
             .hero-sub {
-                font-size: 0.95rem;
-                padding: 0 10px;
+                font-size: 0.88rem;
+                padding: 0 5px;
+                margin-bottom: 1.25rem;
+            }
+            [data-testid="stTabs"] [role="tablist"] {
+                top: 48px;
+                padding: 0 0.5rem;
             }
             [data-testid="stTabs"] button[role="tab"] {
-                padding: 0.75rem 0.75rem !important;
-                font-size: 0.75rem !important;
+                padding: 0.5rem 0.6rem !important;
+                font-size: 0.7rem !important;
             }
             .stat-badge {
-                padding: 1rem 0.5rem;
+                padding: 0.75rem 0.4rem;
+                margin-bottom: 0.5rem;
             }
             .stat-num {
-                font-size: 1.35rem;
+                font-size: 1.2rem;
             }
             .stat-label {
-                font-size: 0.65rem;
+                font-size: 0.6rem;
+            }
+            .section-heading {
+                font-size: 1.15rem;
+                margin-bottom: 0.25rem;
+            }
+            .section-sub {
+                font-size: 0.8rem;
+                margin-bottom: 1rem;
             }
             /* Force vertical stacking for mobile */
             [data-testid="column"] {
                 width: 100% !important;
                 flex: 1 1 100% !important;
+                padding-bottom: 0.5rem;
             }
             .feature-card {
-                padding: 1.25rem;
+                padding: 1rem;
+                margin-bottom: 0.75rem;
             }
+            .feature-icon { font-size: 1.35rem; margin-bottom: 0.4rem; }
+            .feature-title { font-size: 0.95rem; }
+            .feature-desc { font-size: 0.8rem; }
         }
     </style>
 
