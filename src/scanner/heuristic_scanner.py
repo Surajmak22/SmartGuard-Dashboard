@@ -12,7 +12,7 @@ class HeuristicScanner:
         "Obfuscation Indicators": [r"base64", r"char\(", r"str_replace", r"\\u[0-9a-fA-F]{4}", r"0x[0-9a-fA-F]{2,}"],
         "Web Communication": [r"http://", r"https://", r"ftp://", r"socket\("],
         "PDF Intelligence": [r"/JS", r"/JavaScript", r"/OpenAction", r"/AA", r"/AcroForm", r"/RichMedia"],
-        "Malicious Intent": [r"malicious", r"virus", r"payload", r"trojan", r"hack", r"exploit"]
+        "Malicious Intent": [r"malicious", r"virus", r"payload", r"trojan", r"hack", r"exploit", r"stealth", r"obfuscated", r"bypass"]
     }
 
     def scan(self, file_data: bytes, filename: str = "") -> Dict[str, any]:
