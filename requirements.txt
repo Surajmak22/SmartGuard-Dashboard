@@ -11,5 +11,5 @@ scapy
 fastapi
 uvicorn
 python-multipart
-fpdf
+fpdf2
 reportlab
