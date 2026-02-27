@@ -1,13 +1,11 @@
-import streamlit as st
-import pandas as pd
-from src.dashboard.styles.soc_map import create_threat_map
+import src.dashboard.soc_map as soc_map
 
 def run():
     # 1. Visual Header
     st.markdown("""
-        <div style="text-align: center; margin-bottom: 2rem;">
-            <h1 style="background: linear-gradient(to right, #00F5FF, #0072FF); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 2px; font-weight: 800;">GLOBAL THREAT LANDSCAPE</h1>
-            <p style="color: #94A3B8; font-size: 1.1rem;">Real-time visualization of global cyber activity and safety awareness.</p>
+        <div class="hero-section" style="padding: 2rem 0;">
+            <h1 class="hero-title" style="font-size: 2.5rem;"><span class="hero-accent">Global Threat Landscape</span></h1>
+            <p class="hero-sub">Real-time visualization of global cyber activity and safety awareness.</p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -23,8 +21,11 @@ def run():
     st.markdown("---")
 
     # 3. Interactive Map (Eye Candy)
-    st.markdown("### 🌍 Live Cyber Activity Map")
-    st.plotly_chart(create_threat_map(), use_container_width=True)
+    st.markdown('<div class="section-heading">🌍 Live Cyber Activity Map</div>', unsafe_allow_html=True)
+    try:
+        st.plotly_chart(soc_map.create_threat_map(), use_container_width=True)
+    except Exception as e:
+        st.error(f"Error loading map: {e}")
     
     st.markdown("---")
 

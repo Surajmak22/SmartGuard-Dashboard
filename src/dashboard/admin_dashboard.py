@@ -6,7 +6,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
 import requests
-from src.dashboard.styles.ui_components import glass_card
+from src.dashboard.ui_styles import glass_card
 
 API_URL = "http://localhost:8000"
 
