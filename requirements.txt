@@ -8,3 +8,5 @@ numpy
 psutil
 watchdog
 scapy
+fastapi
+uvicorn
