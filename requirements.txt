@@ -10,3 +10,4 @@ watchdog
 scapy
 fastapi
 uvicorn
+python-multipart
