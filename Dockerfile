@@ -19,14 +19,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the entire project
 COPY . .
 
-# Expose the standard Streamlit port
-EXPOSE 8501
+# Expose ports
+EXPOSE 8501 80
 
-# Set PYTHONPATH to include /app directory
-ENV PYTHONPATH=/app
-
-# Healthcheck for Railway/Render
-HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health || exit 1
+# Make start script executable
+RUN chmod +x start.sh
 
 # Entry Point
-CMD ["streamlit", "run", "src/dashboard/main_app.py", "--server.port=8501", "--server.address=0.0.0.0", "--theme.base=dark"]
+CMD ["./start.sh"]

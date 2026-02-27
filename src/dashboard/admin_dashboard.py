@@ -8,7 +8,9 @@ from datetime import datetime
 import requests
 from src.dashboard.ui_styles import glass_card
 
-API_URL = "http://localhost:8000"
+import os
+
+API_URL = os.getenv("BACKEND_API_URL", "http://localhost:80")
 
 class AdminDashboard:
     def __init__(self):
