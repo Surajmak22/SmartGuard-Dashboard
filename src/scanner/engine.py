@@ -49,25 +49,39 @@ class MalwareEngine:
         ml_result = self.ml_layer.scan(file_data)
         
         # Layer 3: Heuristic & Advanced Fragmentation
-        heu_result = self.heuristic_layer.scan(file_data)
+        heu_result = self.heuristic_layer.scan(file_data, filename)
         frag_result = self.calculate_entropy_fragmentation(file_data)
         
-        # Final Risk Aggregation (Weighted - Adjusted for Fragmentation)
-        final_risk_score = (
+        # Final Risk Aggregation (Weighted)
+        weighted_score = (
             (sig_result['risk_score'] * 0.35) + 
             (ml_result['ml_risk_score'] * 0.25) + 
             (heu_result['risk_score'] * 0.25) +
             (frag_result['score'] * 0.15)
         )
         
+        # --- MAX-IMPACT LOGIC (Phase VIII Enhancement) ---
+        # If any single layer is extremely confident (>85), we boost the final score
+        max_layer_impact = max(
+            sig_result['risk_score'], 
+            ml_result['ml_risk_score'], 
+            heu_result['risk_score']
+        )
+        
+        final_risk_score = weighted_score
+        if max_layer_impact >= 90:
+            final_risk_score = max(final_risk_score, max_layer_impact * 0.95)
+        elif max_layer_impact >= 75:
+            final_risk_score = max(final_risk_score, 71.0) # Force Suspicious at minimum
+            
         # Explainable AI: Generate Risk Breakdown
         explanations = []
         if sig_result['risk_score'] > 0:
             explanations.append(f"Signature Match ({sig_result['risk_score']}/100): Known threat pattern detected.")
         if ml_result['ml_risk_score'] > 60:
             explanations.append(f"Neural Anomaly ({ml_result['ml_risk_score']}/100): Structure resembles known malware families.")
-        if heu_result['risk_score'] > 50:
-            explanations.append(f"Heuristic Flag ({heu_result['risk_score']}/100): Suspicious API calls or offsets indentified.")
+        if heu_result['risk_score'] > 0:
+            explanations.append(f"Heuristic Flag ({heu_result['risk_score']}/100): Suspicious behavioral triggers detected.")
         if frag_result['score'] > 30:
             for signal in frag_result['signals']:
                 explanations.append(f"Entropy Warning: {signal}")
@@ -77,12 +91,12 @@ class MalwareEngine:
         if final_risk_score > 40 and final_risk_score < 70 and confidence < 70:
             explanations.append("Low Confidence: AI detection is uncertain; manual review recommended.")
 
-        # Final Classification
-        if final_risk_score > 70 or sig_result['risk_score'] == 100:
+        # Final Classification - TIGHTENED THRESHOLDS
+        if final_risk_score >= 70 or sig_result['risk_score'] == 100:
             classification = "MALICIOUS"
             severity = "Critical" if final_risk_score > 90 else "High"
-        elif final_risk_score > 40:
-            classification = "SUSPICIOUS" # Uncertainty Range
+        elif final_risk_score >= 40:
+            classification = "SUSPICIOUS"
             severity = "Medium"
         else:
             classification = "CLEAN"
