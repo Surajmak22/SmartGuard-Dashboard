@@ -54,8 +54,9 @@ class SmartGuardDashboard:
             st.error(f"Error finding capture files: {e}")
             return None
     
-    def load_data(self, file_path):
-        """Load and preprocess data from a capture file."""
+    @st.cache_data(ttl=300)
+    def load_data(_self, file_path):
+        """Load and preprocess data from a capture file (Cached)."""
         try:
             df = pd.read_csv(file_path)
             if 'timestamp' in df.columns:
@@ -66,8 +67,9 @@ class SmartGuardDashboard:
             st.error(f"Error loading data: {e}")
             return pd.DataFrame()
     
-    def generate_synthetic_data(self, rows=1000):
-        """Generate synthetic network traffic data for demonstration."""
+    @st.cache_data(ttl=60) # Cache for 60 seconds
+    def generate_synthetic_data(_self, rows=1000):
+        """Generate synthetic network traffic data for demonstration (Cached)."""
         np.random.seed(42)
         now = datetime.now()
         timestamps = [now - timedelta(seconds=x) for x in range(rows)][::-1]
@@ -83,14 +85,20 @@ class SmartGuardDashboard:
             'is_anomaly': np.random.choice([0, 1], size=rows, p=[0.9, 0.1])
         }
         
-        # Add some patterns to anomalies
-        for i in range(rows):
-            if data['is_anomaly'][i]:
+        # Add some patterns to anomalies (optimized loop)
+        is_anom = data['is_anomaly'] == 1
+        n_anom = np.sum(is_anom)
+        
+        if n_anom > 0:
+            indices = np.where(is_anom)[0]
+            # Vectorized updates relative to numpy arrays would be faster but list comprehension is fine for 1000 rows
+            # Keeping original logic structure for safety but cached
+            for i in indices:
                 if np.random.random() > 0.5:
-                    data['dst_port'][i] = np.random.choice([4444, 31337, 2323, 23231])
-                    data['length'][i] = np.random.randint(1500, 10000)
+                   data['dst_port'][i] = np.random.choice([4444, 31337, 2323, 23231])
+                   data['length'][i] = np.random.randint(1500, 10000)
                 else:
-                    data['src_ip'][i] = f"1.2.3.{np.random.randint(1, 255)}"
+                   data['src_ip'][i] = f"1.2.3.{np.random.randint(1, 255)}"
         
         return pd.DataFrame(data)
     
@@ -177,16 +185,20 @@ class SmartGuardDashboard:
         st.title("🛡️ SmartGuard AI - Network Threat Detection")
         st.markdown("---")
         
+# Import the singleton scanner instance
+from src.core.packet_capture import scanner_instance
+
         # Sidebar for controls
         st.sidebar.header("Dashboard Controls")
         
         # Data source selection
         data_source = st.sidebar.radio(
             "Data Source",
-            ["Live Capture (Simulated)", "Load from File"]
+            ["Live Network Traffic (Real-Time)", "Demo Mode (Simulated)", "Load from File"]
         )
         
         if data_source == "Load from File":
+            scanner_instance.stop_capture()
             uploaded_file = st.sidebar.file_uploader("Upload capture file", type=["csv", "pcap"])
             if uploaded_file is not None:
                 df = self.load_data(uploaded_file)
@@ -198,7 +210,26 @@ class SmartGuardDashboard:
                 else:
                     st.warning("No capture files found. Using synthetic data.")
                     df = self.generate_synthetic_data()
+                    
+        elif data_source == "Live Network Traffic (Real-Time)":
+            # Start the background sniffer
+            try:
+                scanner_instance.start_background_capture()
+                df = scanner_instance.get_dataframe(limit=100)
+                
+                # Show status in sidebar
+                st.sidebar.success("🟢 Sniffer Active")
+                st.sidebar.markdown(f"**Packets Buffered:** `{len(df)}`")
+                
+                if df.empty:
+                    st.info("⏳ Waiting for network traffic... (Try browsing the web!)")
+            except Exception as e:
+                st.error(f"Sniffer failed: {e}")
+                df = pd.DataFrame()
+
         else:
+            # Stop sniffer to save resources
+            scanner_instance.stop_capture()
             # Use synthetic data for demo
             df = self.generate_synthetic_data()
             st.sidebar.info("Using simulated live data")

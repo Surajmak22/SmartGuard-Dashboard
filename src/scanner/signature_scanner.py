@@ -32,6 +32,12 @@ class SignatureScanner:
         # 1. Hashing
         sha256 = hashlib.sha256(file_data).hexdigest()
         
+        # 1.5 EICAR Standard Test String Check
+        eicar_string = b"X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"
+        if eicar_string in file_data:
+            threats.append("EICAR Standard Anti-Malware Test File Detected (Safe for testing)")
+            risk_score += 100
+        
         # 2. Known Hash Lookup
         if sha256 in self.KNOWN_THREATS:
             threats.append(f"Known Malware Signature Match: {self.KNOWN_THREATS[sha256]}")

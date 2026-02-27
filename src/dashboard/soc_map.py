@@ -1,10 +1,12 @@
+import streamlit as st
 import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 
+@st.cache_data(ttl=60, show_spinner=False)
 def create_threat_map():
     """
-    Generates a high-end SOC Threat Map simulation.
+    Generates a high-end SOC Threat Map simulation (Cached).
     """
     # Mock global SOC nodes
     nodes_df = pd.DataFrame({
@@ -33,9 +35,9 @@ def create_threat_map():
         textposition="bottom center",
         marker = dict(
             size = 12,
-            color = '#00F5FF',
+            color = '#58A6FF', # GitHub Blue
             symbol = 'square',
-            line = dict(width=1, color='rgba(0, 245, 255, 0.5)')
+            line = dict(width=1, color='rgba(88, 166, 255, 0.5)')
         ),
         name = "Global SOC Nodes"
     ))
@@ -46,7 +48,7 @@ def create_threat_map():
         lat = threats_df['Lat'],
         marker = dict(
             size = 15,
-            color = '#FF003C',
+            color = '#F85149', # GitHub Red
             symbol = 'x',
             opacity = 0.8
         ),
@@ -54,18 +56,18 @@ def create_threat_map():
     ))
 
     fig.update_layout(
-        title = dict(text="GLOBAL DEFENSE MATRIX", font=dict(color="#00F5FF", size=20)),
+        title = dict(text="GLOBAL DEFENSE MATRIX", font=dict(color="#58A6FF", size=20)),
         geo = dict(
             scope = 'world',
             projection_type = 'orthographic',
             showland = True,
-            landcolor = "#0B0E14",
+            landcolor = "#161B22", # GitHub Dark Grey
             showocean = True,
-            oceancolor = "#05070A",
+            oceancolor = "#0D1117", # GitHub Deep Dark
             showlakes = False,
             bgcolor = 'rgba(0,0,0,0)',
             showframe = False,
-            coastlinecolor = "rgba(0, 245, 255, 0.2)"
+            coastlinecolor = "rgba(88, 166, 255, 0.2)"
         ),
         paper_bgcolor = 'rgba(0,0,0,0)',
         plot_bgcolor = 'rgba(0,0,0,0)',

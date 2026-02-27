@@ -1,6 +1,6 @@
 import streamlit as st
 import psutil
-from src.dashboard.styles.ui_components import glass_card
+from src.dashboard.ui_styles import glass_card
 
 def render_sidebar():
     """Renders the main sidebar with navigation and system status."""
