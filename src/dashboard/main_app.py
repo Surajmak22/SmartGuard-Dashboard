@@ -209,6 +209,49 @@ def main():
         }
         h1, h2, h3 { color: #E6EDF3 !important; }
         .stMarkdown p { color: #C9D1D9; font-size: 0.95rem; }
+
+        /* ---------- MOBILE RESPONSIVE QUERIES ---------- */
+        @media (max-width: 768px) {
+            .navbar-strip {
+                padding: 0 1rem;
+            }
+            .block-container {
+                padding-top: 4rem !important;
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+            }
+            .hero-section {
+                padding: 2.5rem 0 2rem;
+            }
+            .hero-title {
+                font-size: 2.25rem !important;
+            }
+            .hero-sub {
+                font-size: 0.95rem;
+                padding: 0 10px;
+            }
+            [data-testid="stTabs"] button[role="tab"] {
+                padding: 0.75rem 0.75rem !important;
+                font-size: 0.75rem !important;
+            }
+            .stat-badge {
+                padding: 1rem 0.5rem;
+            }
+            .stat-num {
+                font-size: 1.35rem;
+            }
+            .stat-label {
+                font-size: 0.65rem;
+            }
+            /* Force vertical stacking for mobile */
+            [data-testid="column"] {
+                width: 100% !important;
+                flex: 1 1 100% !important;
+            }
+            .feature-card {
+                padding: 1.25rem;
+            }
+        }
     </style>
 
     <!-- Top Navbar Brand -->
