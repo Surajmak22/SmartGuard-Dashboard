@@ -1,0 +1,9 @@
+# Exclude large data files to stay under Vercel's 250MB limit
+data/
+venv/
+logs/
+__pycache__/
+*.pcap
+*.csv
+.git/
+.vscode/
