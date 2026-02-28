@@ -13,3 +13,4 @@ uvicorn
 python-multipart
 fpdf2
 reportlab
+python-pptx
