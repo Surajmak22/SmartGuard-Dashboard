@@ -10,7 +10,7 @@ from src.dashboard.ui_styles import glass_card
 
 import os
 
-API_URL = os.getenv("BACKEND_API_URL", "http://localhost:80")
+API_URL = os.getenv("BACKEND_API_URL", "http://localhost:8000")
 
 class AdminDashboard:
     def __init__(self):
