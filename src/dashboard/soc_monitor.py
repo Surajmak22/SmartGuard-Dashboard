@@ -1,3 +1,4 @@
+import streamlit as st
 import src.dashboard.soc_map as soc_map
 
 def run():
