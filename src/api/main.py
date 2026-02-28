@@ -109,7 +109,11 @@ async def get_recent_alerts():
 # --- Phase V Malware Endpoints ---
 
 @app.post("/malware/scan")
-async def upload_and_scan(file: bytes = File(...), filename: str = Form(...)):
+async def upload_and_scan(
+    file: bytes = File(...), 
+    filename: str = Form(...),
+    x_user_id: Optional[str] = Form(None)
+):
     if malware_engine is None:
         raise HTTPException(status_code=503, detail="Malware engine not initialized")
     
@@ -118,14 +122,15 @@ async def upload_and_scan(file: bytes = File(...), filename: str = Form(...)):
     result["id"] = scan_id
     result["timestamp"] = datetime.now().isoformat()
     result["is_malicious"] = result.get("detection") == "MALICIOUS"
+    result["user_id"] = x_user_id # Associate with user
     
     history.add_record(result)
     return result
 
 @app.get("/malware/history")
-async def get_malware_history(limit: int = 20):
-    return history.get_history(limit)
+async def get_malware_history(limit: int = 20, x_user_id: Optional[str] = None):
+    return history.get_history(limit, user_id=x_user_id)
 
 @app.get("/malware/analytics")
-async def get_malware_analytics():
-    return history.get_analytics()
+async def get_malware_analytics(x_user_id: Optional[str] = None):
+    return history.get_analytics(user_id=x_user_id)

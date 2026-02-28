@@ -23,31 +23,33 @@ class HistoryManager:
                 data = json.load(f)
                 data.insert(0, record) # Newest first
                 # Keep only max_records
-                data = data[:self.max_records]
+                data = data[:self.max_records * 5] # Extended storage for multi-user
                 f.seek(0)
                 json.dump(data, f, indent=4)
                 f.truncate()
         except Exception as e:
             print(f"History logging error: {e}")
 
-    def get_history(self, limit: int = 20) -> List[Dict[str, Any]]:
+    def get_history(self, limit: int = 20, user_id: str = None) -> List[Dict[str, Any]]:
         try:
             with open(self.history_file, 'r') as f:
                 data = json.load(f)
+                if user_id:
+                    data = [r for r in data if r.get('user_id') == user_id]
                 return data[:limit]
         except:
             return []
 
-    def get_analytics(self) -> Dict[str, Any]:
-        history = self.get_history(limit=100)
+    def get_analytics(self, user_id: str = None) -> Dict[str, Any]:
+        history = self.get_history(limit=500, user_id=user_id)
         total = len(history)
         if total == 0:
             return {"total_scans": 0, "threat_ratio": 0, "severity_dist": {}}
         
-        threats = len([r for r in history if r['detection'] != 'CLEAN'])
+        threats = len([r for r in history if r.get('detection') != 'CLEAN'])
         severities = {}
         for r in history:
-            s = r['severity']
+            s = r.get('severity', 'Low')
             severities[s] = severities.get(s, 0) + 1
             
         return {

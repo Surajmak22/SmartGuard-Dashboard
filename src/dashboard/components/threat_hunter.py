@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import pandas as pd
 
-def render_threat_hunter(api_url="http://localhost:8000"):
+def render_threat_hunter(api_url="http://localhost:80", user_id=None):
     """
     Renders an advanced threat hunting interface for searching historical scans.
     """
@@ -38,9 +38,8 @@ def render_threat_hunter(api_url="http://localhost:8000"):
     elif search_type == "Threat Keyword":
         search_query = st.text_input("Enter Threat Keyword", placeholder="e.g., trojan, ransomware, etc.")
     
-    if st.button("🔎 HUNT THREATS", use_container_width=True):
         try:
-            response = requests.get(f"{api_url}/malware/history")
+            response = requests.get(f"{api_url}/malware/history", params={"x_user_id": user_id})
             
             if response.status_code == 200:
                 history = response.json()
