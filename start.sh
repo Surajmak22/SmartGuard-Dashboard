@@ -31,7 +31,7 @@ python3 -m streamlit run src/dashboard/main_app.py \
     --server.headless true \
     --server.enableCORS false \
     --server.enableXsrfProtection false \
-    --server.webSocketCompression false \
+    --server.enableWebsocketCompression false \
     --server.maxUploadSize 50 \
     --browser.gatherUsageStats false \
     --theme.base dark
