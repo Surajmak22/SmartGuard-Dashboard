@@ -7,7 +7,6 @@ joblib
 numpy
 psutil
 watchdog
-scapy
 fastapi
 uvicorn
 python-multipart
