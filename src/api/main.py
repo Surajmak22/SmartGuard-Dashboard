@@ -18,6 +18,7 @@ history = HistoryManager()
 # Global state
 detector: Optional[HybridThreatDetector] = None
 malware_engine: Optional[MalwareEngine] = None
+is_initializing = False
 
 class PredictionRequest(BaseModel):
     features: List[float]
@@ -31,15 +32,21 @@ class PredictionResponse(BaseModel):
     contributions: Dict[str, float]
     latency_ms: float
 
-@app.on_event("startup")
-async def startup_event():
-    # Initialize engines on startup
-    await initialize_models()
+async def ensure_engines():
+    """Lazy initialization of AI engines to prevent startup timeouts."""
+    global detector, malware_engine, is_initializing
+    if detector is not None and malware_engine is not None:
+        return
+    
+    if is_initializing:
+        # Wait for initialization to complete if another request started it
+        while is_initializing:
+            await asyncio.sleep(0.5)
+        return
 
-@app.post("/initialize")
-async def initialize_models():
-    global detector, malware_engine
+    is_initializing = True
     try:
+        print("🧠 Lazy Loading AI Engines...")
         input_dim = 20
         from sklearn.ensemble import RandomForestClassifier
         from ..models.cnn_model import NeuralClassifierSklearn
@@ -47,9 +54,12 @@ async def initialize_models():
         
         # Initialize Hybrid Ensemble for Network Detection
         rf = RandomForestClassifier(n_estimators=10)
+        # Fast dummy fit for structure
         rf.fit(np.random.rand(10, input_dim), np.random.randint(0, 2, 10))
+        
         pattern = NeuralClassifierSklearn()
         pattern.fit(np.random.rand(10, input_dim), np.random.randint(0, 2, 10))
+        
         anomaly = AnomalyDetectorSklearn()
         anomaly.fit(np.random.rand(20, input_dim))
         
@@ -57,10 +67,21 @@ async def initialize_models():
         
         # Initialize Malware Engine for File Scanning
         malware_engine = MalwareEngine(ensemble=detector)
-        
-        return {"message": "Phase IV & V Engines Initialized Successfully"}
+        print("✅ AI Engines Ready.")
     except Exception as e:
-        return {"error": str(e)}
+        print(f"❌ Initialization Error: {e}")
+    finally:
+        is_initializing = False
+
+@app.on_event("startup")
+async def startup_event():
+    # Dashboard binds immediately; models load on first demand
+    print("🚀 API Online - Lazy Loading Enabled")
+
+@app.post("/initialize")
+async def manual_initialize():
+    await ensure_engines()
+    return {"message": "Engines Initialized"}
 
 @app.get("/health")
 async def health_check():
@@ -74,8 +95,9 @@ async def health_check():
 
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(request: PredictionRequest):
+    await ensure_engines()
     if detector is None:
-        raise HTTPException(status_code=503, detail="Network engine not initialized")
+        raise HTTPException(status_code=503, detail="Network engine initializing")
     
     start_time = time.time()
     X = np.array(request.features).reshape(1, -1)
@@ -114,8 +136,9 @@ async def upload_and_scan(
     filename: str = Form(...),
     x_user_id: Optional[str] = Form(None)
 ):
+    await ensure_engines()
     if malware_engine is None:
-        raise HTTPException(status_code=503, detail="Malware engine not initialized")
+        raise HTTPException(status_code=503, detail="Malware engine initializing")
     
     result = malware_engine.scan_file(file, filename)
     scan_id = str(uuid.uuid4())[:8]
