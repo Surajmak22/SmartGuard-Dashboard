@@ -1,13 +1,21 @@
 import logging
 import pandas as pd
-from scapy.all import sniff, Ether, IP, TCP, UDP, Raw, get_if_list
-import scapy.layers.http as http
 from typing import Dict, Any, List, Optional
 import time
 import platform
 import threading
 from collections import deque
 from datetime import datetime
+
+# Scapy requires root/admin network access and is unavailable in cloud containers.
+# We gracefully disable it if it fails to import.
+SCAPY_AVAILABLE = False
+try:
+    from scapy.all import sniff, Ether, IP, TCP, UDP, Raw, get_if_list
+    import scapy.layers.http as http
+    SCAPY_AVAILABLE = True
+except Exception:
+    pass
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -47,11 +55,13 @@ class PacketCapture:
     @staticmethod
     def list_interfaces() -> list:
         """List all available network interfaces."""
+        if not SCAPY_AVAILABLE:
+            return []
         return get_if_list()
         
     def start_background_capture(self):
         """Start the packet capture in a background thread."""
-        if self.is_running:
+        if not SCAPY_AVAILABLE or self.is_running:
             return
             
         self.is_running = True
