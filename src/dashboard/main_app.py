@@ -312,7 +312,7 @@ def main():
         with c1:
             st.markdown('<div class="stat-badge"><div class="stat-num">3</div><div class="stat-label">Detection Layers</div></div>', unsafe_allow_html=True)
         with c2:
-            st.markdown('<div class="stat-badge"><div class="stat-num">10M+</div><div class="stat-label">Known Signatures</div></div>', unsafe_allow_html=True)
+            st.markdown('<div class="stat-badge"><div class="stat-num">HYBRID</div><div class="stat-label">Detection Engine</div></div>', unsafe_allow_html=True)
         with c3:
             st.markdown('<div class="stat-badge"><div class="stat-num">Real-Time</div><div class="stat-label">Analysis Speed</div></div>', unsafe_allow_html=True)
         with c4:

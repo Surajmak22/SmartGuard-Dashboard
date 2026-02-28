@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 import random
 
-def render_audit_log():
+def render_audit_log(user_id=None):
     """
     Renders the User Activity Audit Log.
     """
