@@ -1,46 +1,50 @@
 #!/bin/bash
 
-# Configuration
-# Default to 8501 if PORT isn't set (local dev)
+# --- CONFIGURATION ---
 STREAMLIT_PORT=${PORT:-8501}
-# Backend runs on a fixed internal port
 BACKEND_PORT=8000
 
 # Explicitly set PYTHONPATH to current directory
-export PYTHONPATH=$PYTHONPATH:.
+export PYTHONPATH=$PYTHONPATH:/app
 export BACKEND_API_URL="http://127.0.0.1:${BACKEND_PORT}"
 
-echo "🔧 Environment Check:"
-python3 --version
+echo "🛡️ SMARTGUARD AI - BOOT SEQUENCE INITIATED"
+echo "🔧 ENV: PORT=$PORT, STREAMLIT_PORT=$STREAMLIT_PORT, BACKEND_PORT=$BACKEND_PORT"
 
-# Start FastAPI Backend in background
-echo "🚀 Starting FastAPI Backend on port ${BACKEND_PORT}..."
-# Use 127.0.0.1 for internal backend to avoid potential dual-stack resolution issues
+# --- BACKEND STARTUP ---
+echo "🚀 Starting FastAPI Backend on 127.0.0.1:${BACKEND_PORT}..."
+# Use python3 -m uvicorn for reliability
 python3 -m uvicorn src.api.main:app --host 127.0.0.1 --port ${BACKEND_PORT} --log-level info &
+BACKEND_PID=$!
 
-# Wait for backend to be ready in background (non-blocking)
+# --- HEALTH CHECK (BACKGROUND) ---
 (
-  echo "⏳ Background: Waiting for backend to warm up at ${BACKEND_API_URL}..."
-  max_retries=20
+  echo "⏳ Monitoring Backend Health..."
+  max_retries=30
   count=0
   while ! curl -s ${BACKEND_API_URL}/health > /dev/null; do
       count=$((count+1))
       if [ $count -ge $max_retries ]; then
-          echo "❌ Backend failed to start after $max_retries attempts"
+          echo "❌ ERROR: Backend failed to respond at ${BACKEND_API_URL} after ${max_retries} attempts."
+          kill $BACKEND_PID
           exit 1
       fi
       sleep 2
   done
-  echo "✅ Backend is UP and initialized via startup_event."
+  echo "✅ SUCCESS: Backend is active and initialized."
 ) &
 
-# Start Streamlit Dashboard in foreground - THIS binds to Railway's $PORT
-echo "📊 Starting Streamlit Dashboard on port ${STREAMLIT_PORT}..."
-# Added production flags: headless, enableCORS=false
-streamlit run src/dashboard/main_app.py \
+# --- FRONTEND STARTUP ---
+echo "📊 Starting Streamlit Dashboard on 0.0.0.0:${STREAMLIT_PORT}..."
+# Headless production flags are critical for cloud environments
+# --server.address 0.0.0.0 is required for external access via Railway/Vercel
+# --server.headless true prevents Streamlit from trying to open a browser window
+# --server.enableCORS false and --server.enableXsrfProtection false avoid proxy issues
+python3 -m streamlit run src/dashboard/main_app.py \
     --server.port ${STREAMLIT_PORT} \
     --server.address 0.0.0.0 \
     --server.headless true \
     --server.enableCORS false \
+    --server.enableXsrfProtection false \
     --browser.gatherUsageStats false \
     --theme.base dark
