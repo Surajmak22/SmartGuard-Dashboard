@@ -1,3 +1,12 @@
+---
+title: SmartGuard AI
+emoji: 🛡️
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+---
+
 # SmartGuard AI – Advanced Threat Analysis Center
 
 SmartGuard AI is a production-grade, defense-in-depth file upload and malware detection system. Unlike standard systems that rely solely on signature-based antivirus or basic file-extension checks, SmartGuard AI implements a multi-layered security architecture (Validation → Antivirus → Format Analysis → Heuristic Analysis → Machine Learning → Content Disarm & Reconstruction) optimized for high recall and zero-trust file ingestion.
