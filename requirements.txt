@@ -13,3 +13,11 @@ python-multipart
 fpdf2
 reportlab
 python-pptx
+
+# Added for Production Malware Detection System
+xgboost>=2.0.0
+lightgbm>=4.0.0
+clamd>=1.0.2
+oletools>=0.60.1
+python-magic-bin>=0.4.14; platform_system == 'Windows'
+python-magic>=0.4.27; platform_system != 'Windows'

@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/suraj/.gemini/antigravity/scratch/SmartGuard-Dashboard/mlruns/319567026095190857/ea7468115382488992a8a0b37df3ce54/artifacts
+end_time: 1774114417833
+entry_point_name: ''
+experiment_id: '319567026095190857'
+lifecycle_stage: active
+run_id: ea7468115382488992a8a0b37df3ce54
+run_name: docx_xgboost_rf_ensemble
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1774114417508
+status: 3
+tags: []
+user_id: suraj

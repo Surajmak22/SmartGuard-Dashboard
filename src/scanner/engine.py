@@ -1,145 +1,174 @@
-from typing import Dict, Any, List
+"""
+Upgraded MalwareEngine Orchestrator — SmartGuard AI
+====================================================
+Wires 4 detection layers:
+  1. Signature  (hash DB, magic bytes, extension mismatch)
+  2. Format     (PDF/Image/DOCX/EXE deep structural analysis)  ← NEW
+  3. Heuristic  (100+ regex patterns across 10 categories)
+  4. ML         (60 byte-level features → Random Forest)
+
+Key fix: removed the "valid image → risk=10" override that caused
+every malicious image to be misclassified as safe.
+"""
+from __future__ import annotations
+
+import time
+from typing import Any, Dict, List
+
+import numpy as np
+
 from .signature_scanner import SignatureScanner
 from .ml_scanner import MLScanner
 from .heuristic_scanner import HeuristicScanner
-import time
-import numpy as np
+from .format_scanner import FormatScanner
+
 
 class MalwareEngine:
     """
-    The main orchestrator for Phase V Extended Malware Analysis.
-    Combines 3 layers of security checks into a final risk assessment.
+    4-layer malware detection orchestrator.
+    Each layer contributes a weighted risk score to the final verdict.
     """
+
+    # Layer weights — format scanner gets the biggest share because it's
+    # the most format-specific and hardest to evade.
+    WEIGHTS = {
+        "signature":  0.25,
+        "format":     0.40,   # NEW — format-specific deep analysis
+        "heuristic":  0.20,
+        "ml":         0.15,
+    }
+
+    # Thresholds for final classification
+    THRESHOLDS = {
+        "MALICIOUS":   70,
+        "SUSPICIOUS":  40,
+    }
+
     def __init__(self, ensemble=None):
         self.signature_layer = SignatureScanner()
-        self.ml_layer = MLScanner(ensemble=ensemble)
+        self.format_layer    = FormatScanner()
         self.heuristic_layer = HeuristicScanner()
+        self.ml_layer        = MLScanner(ensemble=ensemble)
 
-    def calculate_entropy_fragmentation(self, data: bytes) -> Dict[str, any]:
-        """Checks for variations in entropy across file chunks to detect hidden payloads."""
-        if len(data) < 1024: return {"score": 0, "signals": []}
-        
-        chunk_size = len(data) // 10
-        entropies = []
-        for i in range(10):
-            chunk = data[i*chunk_size:(i+1)*chunk_size]
-            entropies.append(self.ml_layer.calculate_entropy(chunk))
-        
-        variance = np.var(entropies)
-        max_diff = np.max(entropies) - np.min(entropies)
-        
-        signals = []
-        frag_score = 0
-        if variance > 1.5:
-            signals.append(f"Non-Uniform Entropy (Var: {round(variance, 2)}) - Potential Obfuscated Payload")
-            frag_score += 40
-        if max_diff > 3.0:
-            signals.append("Extreme Entropy Divergence - Likely Encrypted Shellcode Fragment")
-            frag_score += 50
-            
-        return {"score": frag_score, "signals": signals}
+    # ── Public API ────────────────────────────────────────────────────────────
 
     def scan_file(self, file_data: bytes, filename: str) -> Dict[str, Any]:
         start_time = time.time()
-        
-        # Layer 1: Signature Scan
+
+        # ── Run all 4 layers ─────────────────────────────────────────────────
         sig_result = self.signature_layer.scan(file_data, filename)
-        
-        # Layer 2: ML Scan
-        ml_result = self.ml_layer.scan(file_data)
-        
-        # Layer 3: Heuristic & Advanced Fragmentation
+        fmt_result = self.format_layer.scan(file_data, filename)
         heu_result = self.heuristic_layer.scan(file_data, filename)
-        frag_result = self.calculate_entropy_fragmentation(file_data)
-        
-        # Final Risk Aggregation (Weighted)
-        weighted_score = (
-            (sig_result['risk_score'] * 0.35) + 
-            (ml_result['ml_risk_score'] * 0.25) + 
-            (heu_result['risk_score'] * 0.25) +
-            (frag_result['score'] * 0.15)
-        )
-        
-        # --- MAX-IMPACT LOGIC (Phase VIII Enhancement) ---
-        # If any single layer is extremely confident (>85), we boost the final score
-        max_layer_impact = max(
-            sig_result['risk_score'], 
-            ml_result['ml_risk_score'], 
-            heu_result['risk_score']
-        )
-        
-        final_risk_score = weighted_score
-        if max_layer_impact >= 90:
-            final_risk_score = max(final_risk_score, max_layer_impact * 0.95)
-        elif max_layer_impact >= 75:
-            final_risk_score = max(final_risk_score, 71.0) # Force Suspicious at minimum
-            
-        # Explainable AI: Generate Risk Breakdown
-        explanations = []
-        if sig_result['risk_score'] > 0:
-            explanations.append(f"Signature Match ({sig_result['risk_score']}/100): Known threat pattern detected.")
-        if ml_result['ml_risk_score'] > 60:
-            explanations.append(f"Neural Anomaly ({ml_result['ml_risk_score']}/100): Structure resembles known malware families.")
-        if heu_result['risk_score'] > 0:
-            explanations.append(f"Heuristic Flag ({heu_result['risk_score']}/100): Suspicious behavioral triggers detected.")
-        if frag_result['score'] > 30:
-            for signal in frag_result['signals']:
-                explanations.append(f"Entropy Warning: {signal}")
-                
-        # Confidence Calibration
-        confidence = ml_result.get('confidence', 0.5) * 100
-        if final_risk_score > 40 and final_risk_score < 70 and confidence < 70:
-            explanations.append("Low Confidence: AI detection is uncertain; manual review recommended.")
+        ml_result  = self.ml_layer.scan(file_data)
 
-        # --- FILENAME INTENT BOOST (Phase VIII.b) ---
-        filename_lowercase = filename.lower()
-        intent_keywords = ["malicious", "virus", "payload", "trojan", "stealth", "obfuscated", "bypass", "eicar"]
-        filename_bonus = 0
-        for kw in intent_keywords:
-            if kw in filename_lowercase:
-                filename_bonus += 40
-        
-        final_risk_score = min(final_risk_score + filename_bonus, 100)
-        
-        # --- BENIGN BIAS (False Positive Protection) ---
-        # If it's a .txt or .md file with ZERO content hits and ZERO filename triggers, treat as TRUSTED
-        is_standard_doc = filename_lowercase.endswith(('.txt', '.md', '.log'))
-        total_content_hits = sum(1 for layer in [sig_result, heu_result] if layer.get('risk_score', 0) > 0)
-        
-        if is_standard_doc and total_content_hits == 0 and filename_bonus == 0:
-            final_risk_score = min(final_risk_score, 10.0) # Suppress any residual noise
-            explanations.append("Benign Bias: Standard document with no suspicious patterns identified.")
+        sig_score = sig_result["risk_score"]
+        fmt_score = fmt_result.risk_score
+        heu_score = heu_result["risk_score"]
+        ml_score  = ml_result["ml_risk_score"]
 
-        # Final Classification - TIGHTENED THRESHOLDS
-        if final_risk_score >= 70 or sig_result['risk_score'] == 100:
+        # ── Weighted combination ─────────────────────────────────────────────
+        weighted = (
+            sig_score * self.WEIGHTS["signature"]  +
+            fmt_score * self.WEIGHTS["format"]      +
+            heu_score * self.WEIGHTS["heuristic"]   +
+            ml_score  * self.WEIGHTS["ml"]
+        )
+
+        # ── Max-impact boost ─────────────────────────────────────────────────
+        # If any single layer is extremely confident we boost the final score.
+        # This prevents a high-confidence format detect from being diluted.
+        max_single = max(sig_score, fmt_score, heu_score)
+
+        final_score = weighted
+        if max_single >= 90:
+            final_score = max(final_score, max_single * 0.95)
+        elif max_single >= 75:
+            final_score = max(final_score, 70.0)  # floor at MALICIOUS threshold
+
+        # ── Signature hard-overrides ─────────────────────────────────────────
+        if sig_score == 100:       # EICAR or known hash → always MALICIOUS
+            final_score = 100.0
+
+        final_score = min(round(final_score, 1), 100.0)
+
+        # ── Build evidence trail ─────────────────────────────────────────────
+        explanations: List[str] = []
+
+        if sig_score > 0:
+            explanations.append(
+                f"[Signature] Score {sig_score}/100 — "
+                + "; ".join(sig_result["threats"][:2])
+            )
+        if fmt_score > 0:
+            explanations.append(
+                f"[Format ({fmt_result.format_type})] Score {fmt_score}/100 — "
+                + "; ".join(fmt_result.threats[:3])
+            )
+        if heu_score > 0:
+            explanations.append(
+                f"[Heuristic] Score {heu_score}/100 — "
+                + "; ".join(heu_result["threats"][:2])
+            )
+        if ml_score > 30:
+            explanations.append(
+                f"[ML] Risk {ml_score:.0f}/100 — entropy {ml_result['entropy']:.2f}; "
+                + "; ".join(ml_result.get("notes", [])[:2])
+            )
+
+        if not explanations:
+            explanations.append("No significant risk indicators detected across all 4 layers.")
+
+        # ── Classification ───────────────────────────────────────────────────
+        if final_score >= self.THRESHOLDS["MALICIOUS"] or sig_score == 100:
             classification = "MALICIOUS"
-            severity = "Critical" if final_risk_score > 90 else "High"
-        elif final_risk_score >= 40:
+            is_malicious   = True
+            severity       = "Critical" if final_score >= 90 else "High"
+        elif final_score >= self.THRESHOLDS["SUSPICIOUS"]:
             classification = "SUSPICIOUS"
-            severity = "Medium"
+            is_malicious   = False
+            severity       = "Medium"
         else:
             classification = "CLEAN"
-            severity = "Low"
-            if not any("Benign Bias" in ex for ex in explanations):
-                explanations.append("File appears benign with no significant risk indicators.")
+            is_malicious   = False
+            severity       = "Low"
+
+        # ── Collect all threat strings ────────────────────────────────────────
+        all_threats: List[str] = (
+            sig_result.get("threats", [])   +
+            fmt_result.threats              +
+            heu_result.get("threats", [])
+        )
 
         scan_duration = time.time() - start_time
-        
+
         return {
-            "filename": filename,
-            "file_size_kb": round(len(file_data) / 1024, 2),
-            "sha256": sig_result['sha256'],
-            "detection": classification,
-            "severity": severity,
-            "risk_score": round(final_risk_score, 1),
-            "confidence": round(confidence, 1),
-            "scan_time_ms": round(scan_duration * 1000, 2),
-            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "layers": {
-                "signature": sig_result,
-                "ml": ml_result,
-                "heuristic": heu_result
+            # Core result
+            "filename":       filename,
+            "file_size_kb":   round(len(file_data) / 1024, 2),
+            "sha256":         sig_result["sha256"],
+            "is_malicious":   is_malicious,
+            "detection":      classification,
+            "severity":       severity,
+            "risk_score":     final_score,
+            "confidence":     round(ml_result.get("confidence", 0.5) * 100, 1),
+            "scan_time_ms":   round(scan_duration * 1000, 2),
+            "timestamp":      time.strftime("%Y-%m-%d %H:%M:%S"),
+            # Detailed layer breakdown
+            "layer_results": {
+                "Signature Scanner":      {"score": sig_score},
+                f"Format ({fmt_result.format_type})": {"score": fmt_score},
+                "Heuristic Analysis":     {"score": heu_score},
+                "ML Classifier":          {"score": round(ml_score, 1)},
             },
-            "all_threats": sig_result['threats'] + heu_result['threats'],
-            "risk_breakdown": explanations
+            "metadata": {
+                "size":    len(file_data),
+                "type":    sig_result.get("detected_label", "Unknown"),
+                "entropy": ml_result.get("entropy", 0.0),
+                "format":  fmt_result.format_type,
+                "sanitizable": fmt_result.sanitizable,
+            },
+            # Threats + explanations
+            "threats":        all_threats[:20],  # cap at 20 items for UI
+            "risk_breakdown": explanations,
+            "format_evidence": fmt_result.evidence,
         }
