@@ -1,34 +1,57 @@
 # Base Image
-FROM python:3.10-slim
+FROM python:3.11-slim-bullseye
 
-# Set working directory
-WORKDIR /app
+# Setup Hugging Face User Configuration
+RUN useradd -m -u 1000 user
+ENV HOME=/home/user \
+    PATH=/home/user/.local/bin:$PATH \
+    PYTHONUNBUFFERED=1 \
+    PORT=7860
 
-# Install system dependencies
-# libgomp1 is critical for scikit-learn (OpenMP)
-# curl is for internal health checks
+WORKDIR $HOME/app
+
+# Install system dependencies (ClamAV for Antivirus scans)
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    libgomp1 \
+    clamav \
+    clamav-daemon \
+    libmagic1 \
+    file \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
-COPY requirements.txt .
+# Update ClamAV virus signatures (Required for Antivirus Layer)
+RUN freshclam
 
-# Install Dependencies
+# Configure ClamAV directory permissions for the Hugging Face user
+RUN mkdir -p /var/run/clamav && \
+    chown -R user:user /var/run/clamav && \
+    chown -R user:user /var/log/clamav && \
+    chown -R user:user /var/lib/clamav
+
+# Copy requirements and install
+COPY --chown=user requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the entire project
-COPY . .
+# Copy the entire project code
+COPY --chown=user . .
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app
+# Switch to the non-root user that Hugging Face Spaces requires
+USER user
 
-# Expose ports
-EXPOSE 80 8501
+# We need a startup script to boot both ClamAV and the Web apps
+RUN echo '#!/bin/bash\n\
+echo "Starting ClamAV Daemon in background..."\n\
+clamd &\n\
+echo "Waiting 10s for ClamAV to initialize signatures in RAM..."\n\
+sleep 10\n\
+echo "Booting FastAPI Backend..."\n\
+python -m uvicorn api.main:app --host 127.0.0.1 --port 8000 --workers 1 &\n\
+echo "Booting SmartGuard Streamlit Dashboard on Port 7860..."\n\
+python -m streamlit run src/dashboard/main_app.py --server.port=7860 --server.address=0.0.0.0\n\
+' > startup_hf.sh
 
-# Start script
-RUN chmod +x start.sh
-CMD ["./start.sh"]
+RUN chmod +x startup_hf.sh
+
+EXPOSE 7860
+
+# Start the application
+CMD ["./startup_hf.sh"]
