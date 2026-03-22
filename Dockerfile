@@ -35,21 +35,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY --chown=user . .
 
 # Switch to the non-root user that Hugging Face Spaces requires
-USER user
-
-# We need a startup script to boot both ClamAV and the Web apps
-RUN echo '#!/bin/bash\n\
-echo "Starting ClamAV Daemon in background..."\n\
-clamd &\n\
-echo "Waiting 10s for ClamAV to initialize signatures in RAM..."\n\
-sleep 10\n\
-echo "Booting FastAPI Backend..."\n\
-python -m uvicorn api.main:app --host 127.0.0.1 --port 8000 --workers 1 &\n\
-echo "Booting SmartGuard Streamlit Dashboard on Port 7860..."\n\
-python -m streamlit run src/dashboard/main_app.py --server.port=7860 --server.address=0.0.0.0\n\
-' > startup_hf.sh
-
+# Make sure the startup script is executable while still root
 RUN chmod +x startup_hf.sh
+
+USER user
 
 EXPOSE 7860
 
