@@ -468,6 +468,21 @@ class DocxScanner:
 
         try:
             with zipfile.ZipFile(io.BytesIO(data), "r") as zf:
+                
+                # ── 1. Check for Encryption / Password Protection ─────
+                is_encrypted = False
+                for info in zf.infolist():
+                    if info.flag_bits & 0x1:
+                        is_encrypted = True
+                        break
+                
+                if is_encrypted:
+                    result.threats.append(
+                        "Password-protected / Encrypted archive — a primary technique "
+                        "used to smuggle malware past antivirus scanners unscathed."
+                    )
+                    result.risk_score += 85
+                    
                 names = zf.namelist()
                 result.evidence.append(f"ZIP contains {len(names)} entries")
 
@@ -527,6 +542,15 @@ class DocxScanner:
                             "archive used as dropper container"
                         )
                         result.risk_score += 70
+                    
+                    # Detect extensionless payloads (e.g. MalwareBazaar raw SHA256 drops)
+                    _, ext = os.path.splitext(name)
+                    if not ext and len(name) >= 32:
+                        result.threats.append(
+                            f"Extension-less high-entropy file found inside archive: '{name}' — "
+                            "often used to drop raw shellcode or unassociated executables"
+                        )
+                        result.risk_score += 65
 
                 # ── Check for path traversal in ZIP entries ────────────
                 for name in names:
