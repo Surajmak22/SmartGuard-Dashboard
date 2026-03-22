@@ -120,6 +120,16 @@ class ReportGenerator:
         from fpdf import FPDF
         
         class PDF(FPDF):
+            def cell(self, w, h=0, txt='', border=0, ln=0, align='', fill=False, link=''):
+                if txt:
+                    txt = str(txt).encode('latin-1', 'replace').decode('latin-1')
+                super().cell(w, h, txt, border, ln, align, fill, link)
+            
+            def text(self, x, y, txt=''):
+                if txt:
+                    txt = str(txt).encode('latin-1', 'replace').decode('latin-1')
+                super().text(x, y, txt)
+
             def header(self):
                 # Professional Dark Header
                 self.set_fill_color(10, 20, 35) # Dark Navy
