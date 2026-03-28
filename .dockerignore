@@ -1,11 +1,45 @@
+# Git
 .git
 .gitignore
+.gitattributes
+
+# Python environment
 venv
 __pycache__
 *.pyc
 *.pyo
 *.pyd
+
+# Large data/model directories (NOT needed in the running container)
+datasets/
+data/
+models/
+mlruns/
+logs/
+
+# OS / editor files
 .DS_Store
+*.bat
+Thumbs.db
+
+# Deployment/dev-only files
+start.sh
 start_dashboard.bat
 run_production.bat
 README_DEPLOY.md
+DEPLOYMENT_GUIDE.md
+.vercelignore
+vercel.json
+Dockerfile.railway
+
+# Dev scripts
+generate_documentation_pdf.py
+generate_presentation.py
+check_imports.py
+init_history.py
+mlops_test.log
+scripts/
+
+# Large binary files
+*.pptx
+*.pdf
