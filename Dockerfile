@@ -18,8 +18,8 @@ RUN apt-get update && apt-get install -y \
     file \
     && rm -rf /var/lib/apt/lists/*
 
-# Update ClamAV virus signatures (Required for Antivirus Layer)
-RUN freshclam
+# NOTE: ClamAV signatures are downloaded at container startup (not build time)
+# to avoid HuggingFace build timeouts and mirror rate limits.
 
 # Configure ClamAV directory permissions for the Hugging Face user
 RUN mkdir -p /var/run/clamav && \
