@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 set -e
 
 # Run ClamAV init in the BACKGROUND so port 7860 opens immediately.
