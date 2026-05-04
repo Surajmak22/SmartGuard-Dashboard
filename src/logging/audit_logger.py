@@ -94,7 +94,7 @@ class AuditLogger:
             self._console.error(f"Failed to write audit log: {e}")
 
         # Console summary
-        icon = {"REJECT": "🚨", "QUARANTINE": "⚠️", "STORE": "✅", "SANITIZE": "🧹"}.get(decision, "ℹ️")
+        icon = {"REJECT": "[!]", "QUARANTINE": "[?]", "STORE": "[OK]", "SANITIZE": "[*]"}.get(decision, "[I]")
         self._console.info(
             f"{icon} [{decision}] {filename} | score={risk_score:.0f}/100 | "
             f"AV={av_status} | {format_type} | {round(file_size_bytes/1024,1)}KB"
