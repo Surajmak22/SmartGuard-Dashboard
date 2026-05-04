@@ -31,8 +31,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the entire project code
 COPY --chown=user . .
 
-# Make startup scripts executable
-RUN chmod +x start.sh startup_hf.sh
+# Make startup scripts executable and fix directory permissions
+RUN chmod +x start.sh startup_hf.sh && \
+    mkdir -p /app/logs /app/data && \
+    chown -R user:user /app
 
 USER user
 
