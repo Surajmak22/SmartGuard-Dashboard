@@ -1,23 +1,36 @@
-﻿#!/bin/bash
+#!/bin/bash
 set -e
 
-# Run ClamAV init in the BACKGROUND so port 7860 opens immediately.
-# HuggingFace marks the Space as "Starting" until port 7860 responds.
-# The app's clam_wrapper.py has graceful fallback, so AV works once clamd is ready.
-(
-  echo "[ClamAV] Downloading virus signatures..."
-  freshclam --quiet 2>/dev/null || echo "[ClamAV] freshclam warning (continuing)..."
-  echo "[ClamAV] Starting clamd daemon..."
-  clamd
-  echo "[ClamAV] clamd is ready."
-) &
+# Use PORT env var from Railway/HuggingFace, default 7860
+APP_PORT=${PORT:-7860}
+BACKEND_PORT=8000
 
-echo "Booting FastAPI Backend..."
-python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000 --workers 1 &
+export PYTHONUNBUFFERED=1
+export PYTHONPATH=${PYTHONPATH:-}:/app
+export BACKEND_API_URL="http://127.0.0.1:${BACKEND_PORT}"
 
-echo "Booting SmartGuard Streamlit Dashboard on Port 7860..."
+# --- ClamAV (background, non-blocking) ---
+if command -v freshclam &> /dev/null; then
+    (
+        echo "Starting ClamAV Daemon in background..."
+        freshclam --quiet 2>/dev/null || echo "[ClamAV] freshclam warning (continuing)..."
+        if command -v clamd &> /dev/null; then
+            clamd 2>/dev/null || echo "[ClamAV] clamd start warning (continuing)..."
+        fi
+        echo "[ClamAV] Init complete."
+    ) &
+fi
+
+echo "Booting FastAPI Backend on 127.0.0.1:${BACKEND_PORT}..."
+python -m uvicorn api.main:app --host 127.0.0.1 --port ${BACKEND_PORT} --workers 1 --log-level warning &
+
+echo "Booting SmartGuard Streamlit Dashboard on Port ${APP_PORT}..."
 exec python -m streamlit run src/dashboard/main_app.py \
-  --server.port=7860 \
+  --server.port=${APP_PORT} \
   --server.address=0.0.0.0 \
+  --server.headless=true \
   --server.enableCORS=false \
-  --server.enableXsrfProtection=false
+  --server.enableXsrfProtection=false \
+  --server.maxUploadSize=50 \
+  --browser.gatherUsageStats=false \
+  --theme.base=dark

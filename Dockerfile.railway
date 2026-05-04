@@ -1,16 +1,15 @@
-# Base Image
+# Railway-optimized Dockerfile (no ClamAV for lighter image)
 FROM python:3.10-slim
 
-# Set working directory
 WORKDIR /app
 
 # Install system dependencies
-# libgomp1 is critical for scikit-learn (OpenMP)
-# curl is for internal health checks
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
     libgomp1 \
+    libmagic1 \
+    file \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
@@ -23,12 +22,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Set environment variables
+# NOTE: Do NOT set PORT here — Railway injects its own PORT at runtime
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 
-# Expose ports
-EXPOSE 80 8501
-
-# Start script
+# Make startup script executable
 RUN chmod +x start.sh
+
+# Start script (uses $PORT from Railway)
 CMD ["./start.sh"]
