@@ -23,7 +23,6 @@ logs/
 Thumbs.db
 
 # Deployment/dev-only files
-start.sh
 start_dashboard.bat
 run_production.bat
 README_DEPLOY.md
